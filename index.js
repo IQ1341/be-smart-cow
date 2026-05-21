@@ -1,95 +1,78 @@
 import express from "express";
 import admin from "firebase-admin";
 import cors from "cors";
+import fs from "fs";
 
-// ========================================
-// EXPRESS INIT
-// ========================================
+// INIT EXPRESS
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// ========================================
+// FIREBASE SERVICE ACCOUNT
+const serviceAccount = JSON.parse(
+  fs.readFileSync("./serviceAccount.json", "utf8")
+);
+
+
 // FIREBASE INIT
-// ========================================
-if (!admin.apps.length) {
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
 
-  admin.initializeApp({
-
-    credential: admin.credential.cert({
-
-      projectId: process.env.FIREBASE_PROJECT_ID,
-
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-
-    }),
-
-    databaseURL:
-      "https://smartcollar-60894-default-rtdb.firebaseio.com"
-
-  });
-
-}
+  // TANPA "/" DI BELAKANG
+  databaseURL:
+    "https://smartcollar-60894-default-rtdb.firebaseio.com"
+});
 
 const db = admin.database();
 
-// ========================================
+
+// DEBUG PROJECT
+console.log("FIREBASE PROJECT:");
+console.log(serviceAccount.project_id);
+
+
 // ROOT
-// ========================================
 app.get("/", (req, res) => {
-
-  res.status(200).send("Backend Running 🚀");
-
+  res.send("Backend Running 🚀");
 });
 
-// ========================================
 // FIREBASE TEST
-// ========================================
 app.get("/firebase-test", async (req, res) => {
 
   try {
 
     const testData = {
-
       status: "success",
       message: "Firebase Connected",
       timestamp: Date.now()
-
     };
 
     await db.ref("test").set(testData);
 
-    console.log("FIREBASE CONNECTED");
+  
+    console.log("FIREBASE TEST SUCCESS");
+    console.log(testData);
 
-    res.status(200).json({
-
+    res.json({
       success: true,
       data: testData
-
     });
 
   } catch (error) {
 
-    console.error("FIREBASE ERROR:");
+    console.error("FIREBASE TEST FAILED");
     console.error(error);
 
     res.status(500).json({
-
       success: false,
       error: error.message
-
     });
-
   }
-
 });
 
-// ========================================
-// POST DATA FROM ESP32
-// ========================================
+
+// API FROM ESP32
 app.post("/api/monitoring", async (req, res) => {
 
   try {
@@ -102,138 +85,35 @@ app.post("/api/monitoring", async (req, res) => {
     console.log("DATA FROM ESP32:");
     console.log(data);
 
-    // SAVE LATEST
+    // SAVE TO FIREBASE
     await db.ref("monitoring/latest").set(data);
 
-    // SAVE HISTORY
-    const historyRef = db.ref("monitoring/history").push();
+    console.log("SEND TO FIREBASE SUCCESS");
 
-    await historyRef.set(data);
-
-    console.log("DATA SAVED");
-
-    res.status(200).json({
-
+    res.json({
       success: true,
       message: "Data saved successfully",
       data
-
     });
 
   } catch (error) {
 
-    console.error("SAVE ERROR:");
+    console.error("SEND TO FIREBASE FAILED");
     console.error(error);
 
     res.status(500).json({
-
       success: false,
       error: error.message
-
     });
-
   }
-
 });
 
-// ========================================
-// GET LATEST DATA
-// ========================================
-app.get("/api/monitoring", async (req, res) => {
+// SERVER START
+const PORT = 3000;
 
-  try {
+app.listen(PORT, () => {
 
-    const snapshot = await db
-      .ref("monitoring/latest")
-      .once("value");
-
-    res.status(200).json({
-
-      success: true,
-      data: snapshot.val()
-
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-
-      success: false,
-      error: error.message
-
-    });
-
-  }
-
+  console.log("");
+  console.log(`BACKEND RUNNING ON PORT ${PORT}`);
+  console.log("");
 });
-
-// ========================================
-// GET HISTORY DATA
-// ========================================
-app.get("/api/history", async (req, res) => {
-
-  try {
-
-    const snapshot = await db
-      .ref("monitoring/history")
-      .once("value");
-
-    res.status(200).json({
-
-      success: true,
-      data: snapshot.val()
-
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-
-      success: false,
-      error: error.message
-
-    });
-
-  }
-
-});
-
-// ========================================
-// DELETE HISTORY
-// ========================================
-app.delete("/api/history", async (req, res) => {
-
-  try {
-
-    await db.ref("monitoring/history").remove();
-
-    res.status(200).json({
-
-      success: true,
-      message: "History deleted"
-
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-
-      success: false,
-      error: error.message
-
-    });
-
-  }
-
-});
-
-// ========================================
-// EXPORT APP FOR VERCEL
-// ========================================
-export default app;
