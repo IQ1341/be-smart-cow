@@ -2,17 +2,13 @@ import express from "express";
 import admin from "firebase-admin";
 import cors from "cors";
 
-// ========================================
-// EXPRESS INIT
-// ========================================
+
 const app = express();
 
 app.set("strict routing", true);
 app.use(cors());
 app.use(express.json());
-// ========================================
-// FIREBASE INIT
-// ========================================
+
 if (!admin.apps.length) {
 
   admin.initializeApp({
@@ -36,18 +32,14 @@ if (!admin.apps.length) {
 
 const db = admin.database();
 
-// ========================================
-// ROOT
-// ========================================
+
 app.get("/", (req, res) => {
 
   res.status(200).send("Backend Running 🚀");
 
 });
 
-// ========================================
-// FIREBASE TEST
-// ========================================
+
 app.get("/firebase-test", async (req, res) => {
 
   try {
@@ -87,9 +79,7 @@ app.get("/firebase-test", async (req, res) => {
 
 });
 
-// ========================================
-// POST DATA FROM ESP32
-// ========================================
+
 app.post("/api/monitoring", async (req, res) => {
 
   try {
@@ -136,9 +126,7 @@ app.post("/api/monitoring", async (req, res) => {
 
 });
 
-// ========================================
-// GET LATEST DATA
-// ========================================
+
 app.get("/api/monitoring", async (req, res) => {
 
   try {
@@ -169,9 +157,7 @@ app.get("/api/monitoring", async (req, res) => {
 
 });
 
-// ========================================
-// GET HISTORY DATA
-// ========================================
+
 app.get("/api/history", async (req, res) => {
 
   try {
@@ -202,9 +188,7 @@ app.get("/api/history", async (req, res) => {
 
 });
 
-// ========================================
-// DELETE HISTORY
-// ========================================
+
 app.delete("/api/history", async (req, res) => {
 
   try {
@@ -233,7 +217,5 @@ app.delete("/api/history", async (req, res) => {
 
 });
 
-// ========================================
-// EXPORT APP FOR VERCEL
-// ========================================
+
 export default app;
